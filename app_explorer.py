@@ -1,5 +1,5 @@
 from shiny import App, ui, render
-import shinyswatch  
+# import shinyswatch  
 from components.panels import panel_explorador, panel_herramientas, panel_estadistica, panel_documentacion
 from utils.data_processing import load_esolmet_data
 from utils.graficadores import graficado_Is_matplotlib
@@ -16,7 +16,7 @@ app_ui = ui.page_fluid(
         panel_documentacion(),
         id="tab",  
     ),
-    theme=shinyswatch.theme.journal
+    # theme=shinyswatch.theme.journal
   
 )
  

@@ -1,10 +1,10 @@
 from shiny import App, ui, render, req, reactive
-import shinyswatch  
+# import shinyswatch  
 from components.panels import panel_subir_datos, panel_documentacion, panel_pruebas
 from utils.data_processing import carga_csv
 from utils.graficadores import graficado_Todo_matplotlib
 
-
+#HOLA
 
 app_ui = ui.page_fluid(
     ui.navset_card_tab(  
@@ -14,7 +14,7 @@ app_ui = ui.page_fluid(
         panel_documentacion(),
         id="tab",  
     ),
-    theme=shinyswatch.theme.journal
+    # theme=shinyswatch.theme.journal
   
 )
  
