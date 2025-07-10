@@ -1,7 +1,7 @@
 from shiny import ui
 from shinywidgets import output_widget
 import faicons as fa  
-
+from components.pv_calc_ui import pv_calc_ui
 
 def panel_estadistica():
     return ui.nav_panel(
@@ -18,7 +18,7 @@ def panel_trayectoriasolar():
 def panel_fotovoltaica():
     return ui.nav_panel(
         "FotoVoltaica",
-        "Inserta aquí la Produccion solar"
+        pv_calc_ui
     )
 
 def panel_confort():
