@@ -24,11 +24,11 @@ modules_pv = {
 }
 
 assembly_options = {
-    "Módulo bifacial o vidrio-vidrio en estructura abierta": "open_rack_glass_glass",
+    # "Módulo bifacial o vidrio-vidrio en estructura abierta": "open_rack_glass_glass",
     "Módulo monocristalino/policristalino en rack abierto": "open_rack_glass_polymer",
-    "Módulo vidrio-vidrio montado sobre techo": "roof_mount_glass_glass",
+    # "Módulo vidrio-vidrio montado sobre techo": "roof_mount_glass_glass",
     "Módulo estándar montado sobre techo": "roof_mount_glass_polymer",
-    "Módulo en estructura con aislamiento": "insulated_back_glass_polymer"
+    # "Módulo en estructura con aislamiento": "insulated_back_glass_polymer"
 }
 
 inverters = {

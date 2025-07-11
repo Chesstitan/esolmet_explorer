@@ -186,7 +186,7 @@ def pvgen_poaglobal_year(ac_power, irradiance):
     fig = go.Figure([
         go.Bar(name='Generación FV', x=months, y=energy_monthly_array["Generación FV"],
             marker_color='rgb(26, 118, 255)'),
-        go.Bar(name='Demanda', x=months, y=energy_monthly_array["Irradiancia_POA"],
+        go.Bar(name='Irradiancia POA', x=months, y=energy_monthly_array["Irradiancia_POA"],
             marker_color='rgb(55, 83, 109)')
     ])
 

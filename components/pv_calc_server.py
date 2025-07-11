@@ -21,9 +21,8 @@ df.index = df.index.tz_localize('America/Mexico_City') # type: ignore # Asignaci
 
 def pv_calc_server(input, output, session):
     
-    # @reactive.event(input.calculate)
-
     @reactive.calc
+    @reactive.event(input.calculate)
     def calcs():
         # Inputs
         surface_tilt=input.tilt()
@@ -40,7 +39,8 @@ def pv_calc_server(input, output, session):
         irradiance = irradiance_poa(df,lat,lon,surface_tilt,surface_azimuth)
         ac_power, df_poa_power = power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff)
 
-        return {"irradiance": irradiance,"ac_power": ac_power,"df_poa_power": df_poa_power}
+        return {"irradiance": irradiance,"ac_power": ac_power,"df_poa_power": df_poa_power,
+                "surface_tilt":surface_tilt,"surface_azimuth":surface_azimuth}
 
     @output
     @render_widget # type: ignore
@@ -76,8 +76,8 @@ def pv_calc_server(input, output, session):
     @output
     @render.table
     def table_hsp():
-        surface_tilt=input.tilt()
-        surface_azimuth=input.azimuth()
+        surface_tilt=calcs()["surface_tilt"]
+        surface_azimuth=calcs()["surface_azimuth"]
         return hsp_calc(df,lat,lon,surface_tilt, surface_azimuth)
     
     # # Botón de descarga para datos POA
