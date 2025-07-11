@@ -20,6 +20,8 @@ df.index = df.index.tz_localize('America/Mexico_City') # type: ignore # Asignaci
 
 
 def pv_calc_server(input, output, session):
+    
+    # @reactive.event(input.calculate)
 
     @reactive.calc
     def bimonth_input():
@@ -35,7 +37,7 @@ def pv_calc_server(input, output, session):
     @reactive.calc
     def energy_goal():
         if input.consume_type() == "Anual":
-            goal = input.goal_year
+            goal = input.goal_year()
         else:
             goal = sum(bimonth_input())
         return goal
@@ -81,25 +83,25 @@ def pv_calc_server(input, output, session):
     @output
     @render_widget # type: ignore
     def graph_irradiances():
-        set_date = input.set_date()
+        set_date = pd.to_datetime(input.set_date()).tz_localize("America/Mexico_City")
         irradiance = calcs()["irradiance"]       
         return poa_visual(df,irradiance,set_date)
     
     @output
     @render_widget # type: ignore
     def graph_ac_power():
-        set_date = input.set_date()
+        set_date = pd.to_datetime(input.set_date()).tz_localize("America/Mexico_City")
         ac_power = calcs()["ac_power"]       
         return power_setdate(ac_power,set_date)
 
     @output
-    @render_widget
+    @render_widget # type: ignore
     def graph_hsp():
         surface_tilt=input.tilt()
         surface_azimuth=input.azimuth()
         df_hsp = hsp_calc(df,lat,lon,surface_tilt, surface_azimuth)
         irradiance = calcs()["irradiance"]   
-        set_date = input.set_date()    
+        set_date = pd.to_datetime(input.set_date()).tz_localize("America/Mexico_City")    
         return hsp_visual(df_hsp,irradiance,set_date)
     
     @output
@@ -127,4 +129,3 @@ def pv_calc_server(input, output, session):
     #         yield table.to_csv()
     #     return writer
     
-# app = App(ui=pv_calc_ui, server=pv_calc_server)

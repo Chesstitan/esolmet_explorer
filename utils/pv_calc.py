@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.io as pio
+from datetime import timedelta
 # Librerias de Pvlib
 from pvlib.pvsystem import pvwatts_dc # Modelo PVWatts
 from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS, sapm_cell #Modelo para temperatura de celda
@@ -94,7 +95,9 @@ def hsp_visual(df_hsp,irradiance,set_date):
     Return: Gráfico de la definición de HSP sobre una curva G de un día específico
     '''
     hsp_year= df_hsp.Average.iloc[1]
-    ghi_poa = irradiance.poa_global.resample("h").mean().loc[set_date] # type: ignore
+    start_date = set_date
+    end_date = set_date + timedelta(days=1)
+    ghi_poa = irradiance.poa_global.resample("h").mean().loc[str(start_date):str(end_date)] # type: ignore
     center_time = ghi_poa.idxmax() #Tomé el max de irradiancia como valor central 
     start_time = center_time - pd.Timedelta(hours=hsp_year / 2)
     end_time = center_time + pd.Timedelta(hours=hsp_year / 2)
@@ -281,14 +284,16 @@ def poa_visual(df,irradiance,set_date):
 
     Return: Gráfico irradiancias de mediciones meteorológicas e irradiancias sobre un plano inclinado (POA)
     '''
+    start_date = set_date
+    end_date = set_date + timedelta(days=1)
     # Mediciones
-    ghi = df.ghi.resample("h").mean().loc[set_date].round(2)
-    dni = df.dni.resample("h").mean().loc[set_date]
-    dhi = df.dhi.resample("h").mean().loc[set_date]
+    ghi = df.ghi.resample("h").mean().loc[str(start_date):str(end_date)].round(2)
+    dni = df.dni.resample("h").mean().loc[str(start_date):str(end_date)]
+    dhi = df.dhi.resample("h").mean().loc[str(start_date):str(end_date)]
     # Del irradiance model POA sobre plano inclinado
-    ghi2 = irradiance.poa_global.resample("h").mean().loc[set_date] # type: ignore
-    dni2 = irradiance.poa_direct.resample("h").mean().loc[set_date] # type: ignore
-    dhi2 = irradiance.poa_diffuse.resample("h").mean().loc[set_date] # type: ignore
+    ghi2 = irradiance.poa_global.resample("h").mean().loc[str(start_date):str(end_date)]
+    dni2 = irradiance.poa_direct.resample("h").mean().loc[str(start_date):str(end_date)] 
+    dhi2 = irradiance.poa_diffuse.resample("h").mean().loc[str(start_date):str(end_date)] 
 
     fig = go.Figure()
 
@@ -322,8 +327,10 @@ def power_setdate(ac_power,set_date):
 
     Return: Gráfico de potencia AC de un día específico
     '''
+    start_date = set_date
+    end_date = set_date + timedelta(days=1)
     ac_power_day = ac_power.resample("h").mean()
-    ac_power_day = ac_power_day.loc[set_date]
+    ac_power_day = ac_power_day.loc[str(start_date):str(end_date)]
 
     fig = go.Figure()
 

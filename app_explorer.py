@@ -1,6 +1,7 @@
 from shiny import App, ui, render
 import shinyswatch
 from components.explorador import panel_explorador, panel_estadistica
+from components.pv_calc_server import pv_calc_server
 from components.panels import (
     panel_documentacion,
     panel_trayectoriasolar,
@@ -53,5 +54,6 @@ def server(input, output, session):
     def plot_matplotlib():
         return graficado_Is_matplotlib(input.fechas())
 
+    pv_calc_server(input, output, session)
 
 app = App(app_ui, server)
