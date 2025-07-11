@@ -58,6 +58,7 @@ def hsp_calc(df,lat,lon,surface_tilt, surface_azimuth):
     solpos = location.get_solarposition(df.index)
     tilts= [0,surface_tilt,surface_tilt-15,surface_tilt+15,90]
     hsp_dict = {}
+    months_index = []  
     for tilt in tilts:
         irradiance = get_total_irradiance(
             surface_tilt = tilt,
@@ -72,13 +73,18 @@ def hsp_calc(df,lat,lon,surface_tilt, surface_azimuth):
         hsp_d = ghi_hour.resample("D").sum()/1000  
         hsp_avg_m = hsp_d.resample("ME").mean()
 
-        hsp_dict[f"{tilt}°"] = round(hsp_avg_m,2)
+        # Guardar los nombres de meses desde el índice real
+        if not months_index:
+            months_index = [dt.strftime('%B') for dt in hsp_avg_m.index]
 
-    df_hsp= (pd.DataFrame(hsp_dict)).T
-    df_hsp.columns = df_hsp.columns.strftime('%B') # type: ignore
-    df_hsp.index.name = "Tilt"
-    df_hsp["Average"]=df_hsp.mean(axis=1).round(2)
-    
+        hsp_dict[f"{tilt}°"] = [round(val, 2) for val in hsp_avg_m.values]
+
+    df_hsp = pd.DataFrame.from_dict(hsp_dict, orient='index')
+    df_hsp.columns = months_index  # usa nombres de meses como columnas
+    df_hsp["Average"] = df_hsp.mean(axis=1).round(2)
+    df_hsp.reset_index(inplace=True)
+    df_hsp.rename(columns={"index": "Slope"}, inplace=True)
+
     return df_hsp
 
 # Visualización la definición de HSP 
