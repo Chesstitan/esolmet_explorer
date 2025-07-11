@@ -1,7 +1,7 @@
 from shiny import App, ui, render, reactive
 from shinywidgets import output_widget, render_widget
 from utils.config import load_settings
-from utils.pv_calc import irradiance_poa, hsp_calc, hsp_visual, power_calc, modules, pvgen_demand_year, pvgen_demand_bimonth, poa_visual, power_setdate
+from utils.pv_calc import irradiance_poa, hsp_calc, hsp_visual, power_calc, pvgen_poaglobal_year, poa_visual, power_setdate
 from components.pv_calc_ui import modules_pv, assembly_options, inverters
 import pandas as pd
 import duckdb
@@ -24,25 +24,6 @@ def pv_calc_server(input, output, session):
     # @reactive.event(input.calculate)
 
     @reactive.calc
-    def bimonth_input():
-        goal = [
-            input.bim_ene_feb(),
-            input.bim_mar_abr(),
-            input.bim_may_jun(),
-            input.bim_jul_ago(),
-            input.bim_sep_oct(),
-            input.bim_nov_dic(),]
-        return goal
-    
-    @reactive.calc
-    def energy_goal():
-        if input.consume_type() == "Anual":
-            goal = input.goal_year()
-        else:
-            goal = sum(bimonth_input())
-        return goal
-
-    @reactive.calc
     def calcs():
         # Inputs
         surface_tilt=input.tilt()
@@ -54,32 +35,20 @@ def pv_calc_server(input, output, session):
         assembly = assembly_options[selected_asse]
         selected_inv = input.inverter_model()
         inv_eff = inverters[selected_inv]
-        goal_year = energy_goal()
+
         # Funciones de cálculo
         irradiance = irradiance_poa(df,lat,lon,surface_tilt,surface_azimuth)
         ac_power, df_poa_power = power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff)
-        num_pv, pvno_energy_year, percen, energy_year, energy_monthly = modules(ac_power,goal_year)
 
-        return {"irradiance": irradiance,"ac_power": ac_power,"df_poa_power": df_poa_power,
-                "num_pv": num_pv,"pvno_energy_year": pvno_energy_year,"percen": percen,
-                "energy_year": energy_year,"energy_monthly": energy_monthly }
+        return {"irradiance": irradiance,"ac_power": ac_power,"df_poa_power": df_poa_power}
 
     @output
     @render_widget # type: ignore
     def graph_energy_month():
-        goal_year = input.goal_year()
-        num_pv = calcs()["num_pv"]
-        energy_monthly = calcs()["energy_monthly"]        
-        return pvgen_demand_year(goal_year,num_pv,energy_monthly)
+        ac_power = calcs()["ac_power"]
+        irradiance = calcs()["irradiance"]        
+        return pvgen_poaglobal_year(ac_power, irradiance)
     
-    @output
-    @render_widget # type: ignore
-    def graph_energy_bimonth():
-        goal_bimonth = bimonth_input()
-        num_pv = calcs()["num_pv"]
-        energy_monthly = calcs()["energy_monthly"]        
-        return pvgen_demand_bimonth(goal_bimonth,num_pv,energy_monthly)
-
     @output
     @render_widget # type: ignore
     def graph_irradiances():

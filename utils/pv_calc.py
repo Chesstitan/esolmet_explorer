@@ -162,105 +162,36 @@ def power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff):
 
     return ac_power, df_poa_power
 
-# Módulos y energía  
-def modules(ac_power,goal_year):
+# PV gen vs Irradiancia global sobre plano
+def pvgen_poaglobal_year(ac_power, irradiance):
     '''
-    Calcula variables como el número de paneles, la energía mensual y anual
+    Grafica la generación FV de un módulo y la irradiancia global sobre un plano de un módulo
 
     Parámetros:
     - ac_power: DataFrame con índice datetime de la potencia AC [W]
-    - goal_year : Consumo/Demanda/Meta anual de energía [kWh]
+    - irradiance : irradiancia global sobre un plano inclinado [W/m^2]
 
-    Return: número de módulos necesarios para cubrir la demanda anual, 
-    energía anual del número de módulos FV [kWh], porcentaje de energía cubierta por los módulos FV
-    energía anual [kWh], energía mensual de un sólo módulo [kWh].
-    ''' 
-    ac_power_hour = ac_power.resample("h").mean()/1000 # Energía por hora en kWh
-    energy_monthly = ac_power_hour.resample("ME").sum()
-    energy_year = ac_power_hour.sum()
-    num_pv = (goal_year / energy_year).round()
-    pvno_energy_year = (num_pv*energy_year).round(2)
-    percen = ((num_pv*energy_year)/goal_year)*100
-
-    return  num_pv, pvno_energy_year, percen, energy_year, energy_monthly
-
-# CONSUMO ANUAL
-def pvgen_demand_year(goal_year,num_pv,energy_monthly):
+    Return: Gráfico generación FV vs irradiancia sobre un plano por mes
     '''
-    Grafica la generación FV total del número de módulos y la demanda mensual promedio a lo largo de un año
+    ac_power_hour = ac_power.resample("h").mean()/1000 # Energía de potencia AC en kWh
+    energy_ac_monthly = ac_power_hour.resample("ME").sum()
 
-    Parámetros:
-    - goal_year : Consumo/Demanda/Meta anual de energía [kWh]
-    - num_pv: número de módulos FV
-    - energy_monthly: energía mensual de un sólo módulo FV [kWh]
+    poa_global_hour = irradiance.poa_global.resample("h").mean()/1000 # Energía de irradiancia sobre módulo en kWh
+    energy_poa_monthly = poa_global_hour.resample("ME").sum()
 
-    Return: Gráfico generación FV vs Demanda mensual promedio de un año
-    '''
-    demand = round(goal_year/12,2)
-    energy_monthly_array = pd.DataFrame({"Generación FV": (energy_monthly * num_pv).round(2),
-        "Demanda":  demand})
+    energy_monthly_array = pd.DataFrame({"Generación FV": (energy_ac_monthly).round(2),
+        "Irradiancia_POA":  (energy_poa_monthly).round(2)})
     months = energy_monthly_array.index.to_period('M').strftime('%b') # type: ignore
 
     fig = go.Figure([
         go.Bar(name='Generación FV', x=months, y=energy_monthly_array["Generación FV"],
             marker_color='rgb(26, 118, 255)'),
-        go.Bar(name='Demanda', x=months, y=energy_monthly_array["Demanda"],
+        go.Bar(name='Demanda', x=months, y=energy_monthly_array["Irradiancia_POA"],
             marker_color='rgb(55, 83, 109)')
     ])
 
     fig.update_layout(
-        title='Energía mensual: Generación FV vs Demanda',
-        xaxis_title='Mes',
-        yaxis_title='Energía (kWh)',
-        barmode='group',
-        bargap=0.15,
-        bargroupgap=0.1,
-        legend=dict(
-            x=1.1,  # Dentro del área de trazado
-            y=1,
-            xanchor='right',
-            yanchor='top',
-            bgcolor='rgba(0,0,0,0)',  # Fondo transparente
-            bordercolor='rgba(0,0,0,0)'  # Sin borde
-        ),
-        margin=dict(r=30)
-    )
-    return fig
-
-# CONSUMO BIMESTRAL
-def pvgen_demand_bimonth(goal_bimonth,num_pv,energy_monthly):
-    '''
-    Grafica la generación FV total del número de módulos y la demanda bimestral a lo largo de un año
-
-    Parámetros:
-    - goal_bimonth : Consumo/Demanda/Meta bimestral de energía [kWh]
-    - num_pv: número de módulos FV
-    - energy_monthly: energía mensual de un sólo módulo FV [kWh]
-
-    Return: Gráfico generación FV vs Demanda bimestral de un año
-    '''
-    demand = goal_bimonth
-    bimestres = ["Ene-Feb", "Ene-Feb", "Mar-Abr", "Mar-Abr", "May-Jun", "May-Jun",
-                "Jul-Ago", "Jul-Ago", "Sep-Oct", "Sep-Oct", "Nov-Dic", "Nov-Dic"]
-    energy_bimon_df = energy_monthly.copy()
-    energy_bimon_df.index = bimestres
-    gen_bimon = energy_bimon_df.groupby(level=0).sum()
-    orden_bimestres = ["Ene-Feb", "Mar-Abr", "May-Jun", "Jul-Ago", "Sep-Oct", "Nov-Dic"]
-    gen_bimon = gen_bimon.reindex(orden_bimestres)
-    # demand_series = pd.Series(goal_bimonth, index=orden_bimestres)
-    energy_monthly_array = pd.DataFrame({"Generación FV": (gen_bimon * num_pv).round(2),
-        "Demanda": demand
-    })
-
-    fig = go.Figure([
-        go.Bar(name='Generación FV', x=energy_monthly_array.index, y=energy_monthly_array["Generación FV"],
-            marker_color='rgb(26, 118, 255)'),
-        go.Bar(name='Demanda', x=energy_monthly_array.index, y=energy_monthly_array["Demanda"],
-            marker_color='rgb(55, 83, 109)')
-    ])
-
-    fig.update_layout(
-        title='Energía bimestral: Generación FV vs Demanda',
+        title='Energía mensual: Generación FV vs Irradiancia POA',
         xaxis_title='Mes',
         yaxis_title='Energía (kWh)',
         barmode='group',
