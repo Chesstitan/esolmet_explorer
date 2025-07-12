@@ -213,96 +213,204 @@ def pvgen_poaglobal_year(ac_power, irradiance):
     return fig
 
 # 8. Visualización de ghi, dni, dhi contra ghi2, dni2, dhi2 del modelo POA
+# #Esta función grafica con líneas sobre el eje x, comprobar con nueva base de datos
+# def poa_visual_extrdays(irradiance):
+#     '''
+#     Grafica las irradiancias sobre un plano inclinado (POA) del día máximo y mínimo de energía anual por irradiancia
+
+#     Parámetros:
+#     - irradiance : irradiancia global sobre un plano inclinado [W/m^2]
+
+#     Return: Gráfico irradiancias sobre un plano inclinado (POA) del día máximo y mínimo de energía del año
+#     '''
+#     # Obteniendo irradiance por día
+#     poa_global_hour = irradiance.poa_global.resample("h").mean()
+#     energy_poa_daily = poa_global_hour.resample("D").sum()
+    
+#     # Día con mayor y menor energía
+#     max_irr_day = energy_poa_daily.idxmax()
+#     min_irr_day = energy_poa_daily.idxmin()
+       
+#     # Fechas para graficar 
+#     start_maxir = max_irr_day
+#     end_maxir = start_maxir + timedelta(hours=24)
+#     start_minir = min_irr_day
+#     end_minir = start_minir + timedelta(hours=24)
+    
+#     # Del irradiance model POA sobre plano inclinado
+#     poa_max = poa_global_hour.loc[start_maxir:end_maxir]
+#     poa_min = poa_global_hour.loc[start_minir:end_minir]
+
+#     hours_max = [t.strftime('%H:%M') for t in poa_max.index.time]
+#     hours_min = [t.strftime('%H:%M') for t in poa_min.index.time]
+#     hover_max = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W/m²" for dt, val in zip(poa_max.index, poa_max)]
+#     hover_min = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W/m²" for dt, val in zip(poa_min.index, poa_min)]
+
+#     fig = go.Figure()
+
+#     fig.add_trace(go.Scatter(x=hours_max, y=poa_max, mode='lines', name=f'Día con máxima energía ({max_irr_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
+#     fig.add_trace(go.Scatter(x=hours_min, y=poa_min, mode='lines', name=f'Día con mínima energía ({min_irr_day.date()})', line=dict(color='blue'),hovertext=hover_min,hoverinfo="text"))
+    
+#     fig.update_layout(
+#         title=f'Comparación de irradiancias (POA global) del día de máxima y mínima energía del año',
+#         xaxis_title='Hora del día',
+#         yaxis_title='Irradiancia (W/m2)',
+#         legend=dict(x=1.02, y=1, xanchor='left'),
+#         margin=dict(r=100),
+#         template='plotly_white'
+#     )
+
+#     return fig
+
 def poa_visual_extrdays(irradiance):
     '''
-    Grafica las irradiancias sobre un plano inclinado (POA) del día máximo y mínimo de energía anual por irradiancia
+    Grafica las irradiancias sobre un plano inclinado (POA) del día máximo y mínimo anual de energía
 
     Parámetros:
-    - irradiance : irradiancia global sobre un plano inclinado [W/m^2]
+    - irradiance : DataFrame con columna poa_global [W/m²]
 
-    Return: Gráfico irradiancias sobre un plano inclinado (POA) del día máximo y mínimo de energía del año
+    Return: Figura de Plotly con ambas curvas sobre el mismo eje horario
     '''
-    # Obteniendo irradiance por día
-    poa_global_hour = irradiance.poa_global.resample("h").mean()
-    energy_poa_daily = poa_global_hour.resample("D").sum()
-    
-    # Día con mayor y menor energía
-    max_irr_day = energy_poa_daily.idxmax()
-    min_irr_day = energy_poa_daily.idxmin()
-       
-    # Fechas para graficar 
-    start_maxir = max_irr_day
-    end_maxir = start_maxir + timedelta(days=1)
-    start_minir = min_irr_day
-    end_minir = start_minir + timedelta(days=1)
-    
-    # Del irradiance model POA sobre plano inclinado
-    poa_max = irradiance.poa_global.resample("h").mean().loc[start_maxir:end_maxir]
-    poa_min = irradiance.poa_global.resample("h").mean().loc[start_minir:end_minir]
+    # Energía diaria por poa_global
+    poa_hourly = irradiance.poa_global.resample("h").mean()
+    energy_daily = poa_hourly.resample("D").sum()
 
-    hours_max = [t.strftime('%H:%M') for t in poa_max.index.time]
-    hours_min = [t.strftime('%H:%M') for t in poa_min.index.time]
-    hover_max = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W/m²" for dt, val in zip(poa_max.index, poa_max)]
-    hover_min = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W/m²" for dt, val in zip(poa_min.index, poa_min)]
+    # Fechas clave
+    max_day = energy_daily.idxmax()
+    min_day = energy_daily.idxmin()
 
+    # Rango estándar de horas: 00:00 a 23:00
+    hours = pd.date_range("00:00", "23:00", freq="H").time
+    x_labels = [t.strftime('%H:%M') for t in hours]
 
+    # Función para extraer y alinear los datos de un día
+    def get_day_values(day):
+        day_data = poa_hourly.loc[day:day + timedelta(hours=23)]
+        # Reindexar por hora
+        day_data = day_data.groupby(day_data.index.time).mean()
+        aligned = pd.Series(day_data, index=hours)  
+        return aligned
+
+    poa_max = get_day_values(max_day)
+    poa_min = get_day_values(min_day)
+
+    # Hover info
+    hover_max = [f"{max_day.date()} {t} - {v:.2f} W/m²" for t, v in zip(x_labels, poa_max)]
+    hover_min = [f"{min_day.date()} {t} - {v:.2f} W/m²" for t, v in zip(x_labels, poa_min)]
+
+    # Gráfico
     fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x_labels, y=poa_max, name=f"Día con máxima energía ({max_day.date()})",
+                             line=dict(color="red"), mode="lines", hovertext=hover_max, hoverinfo="text"))
+    fig.add_trace(go.Scatter(x=x_labels, y=poa_min, name=f"Día con mínima energía ({min_day.date()})",
+                             line=dict(color="blue"), mode="lines", hovertext=hover_min, hoverinfo="text"))
 
-    fig.add_trace(go.Scatter(x=hours_max, y=poa_max.values, mode='lines', name=f'Día con máxima energía ({max_irr_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
-    fig.add_trace(go.Scatter(x=hours_min, y=poa_min.values, mode='lines', name=f'Día con mínima energía ({min_irr_day.date()})', line=dict(color='blue'),hovertext=hover_min,hoverinfo="text"))
-    
     fig.update_layout(
-        title=f'Comparación de irradiancias (POA global) del día de máxima y mínima energía del año',
-        xaxis_title='Hora del día',
-        yaxis_title='Irradiancia (W/m2)',
-        legend=dict(x=1.02, y=1, xanchor='left'),
-        margin=dict(r=100),
-        template='plotly_white'
+        title="Comparación de irradiancias (POA global) del día de máxima y mínima energía del año",
+        xaxis_title="Hora del día",
+        yaxis_title="Irradiancia (W/m²)",
+        template="plotly_white",
+        legend=dict(x=1.02, y=1, xanchor="left"),
+        margin=dict(r=100)
     )
 
     return fig
 
 # 9. Visualizacion de potencia en un día
+# #Esta función grafica con líneas sobre el eje x, comprobar con nueva base de datos
+# def power_visual_extrdays_1(ac_power):
+#     '''
+#     Grafica la potencia AC del día máximo y mínimo de energía anual por potencia
+
+#     Parámetros:
+#     - ac_power: DataFrame con índice datetime de la potencia AC [W]
+
+#     Return: Gráfico de potencia AC del día máximo y mínimo de un año
+#     '''
+#     ac_power_hour = ac_power.resample("h").mean() 
+#     ac_power_hour_daily = ac_power_hour.resample("D").sum()
+
+#     max_power_day = ac_power_hour_daily.idxmax()
+#     min_power_day = ac_power_hour_daily.idxmin()
+
+#     start_maxpow = max_power_day
+#     end_maxpow = start_maxpow + timedelta(days=1)
+#     start_minpow = min_power_day
+#     end_minpow = start_minpow + timedelta(days=1)
+
+#     ac_power_maxday = ac_power.resample("h").mean().loc[start_maxpow:end_maxpow]
+#     ac_power_minday = ac_power.resample("h").mean().loc[start_minpow:end_minpow]
+
+#     hours_max = [t.strftime('%H:%M') for t in ac_power_maxday.index.time]
+#     hours_min = [t.strftime('%H:%M') for t in ac_power_minday.index.time]
+#     hover_max = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W" for dt, val in zip(ac_power_maxday.index, ac_power_maxday)]
+#     hover_min = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W" for dt, val in zip(ac_power_minday.index, ac_power_minday)]
+
+#     fig = go.Figure()
+
+#     fig.add_trace(go.Scatter(x=hours_max, y=ac_power_maxday.values, mode='lines', name=f'Día con máxima energía ({max_power_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
+#     fig.add_trace(go.Scatter(x=hours_min, y=ac_power_minday.values, mode='lines', name=f'Día con mínima energía ({min_power_day.date()})',line=dict(color='blue'), hovertext=hover_min, hoverinfo="text"))
+    
+#     fig.update_layout(
+#         title='Comparación de potencia AC del día de máxima y mínima energía del año',
+#         xaxis_title='Hora del día',
+#         yaxis_title='Potencia AC [W]',
+#         xaxis=dict(showgrid=True),
+#         yaxis=dict(showgrid=True),
+#         template='plotly_white'
+#     )
+
+#     return fig
+
 def power_visual_extrdays(ac_power):
     '''
-    Grafica la potencia AC del día máximo y mínimo de energía anual por potencia
+    Grafica la potencia AC del día con máxima y mínima energía anual
 
     Parámetros:
-    - ac_power: DataFrame con índice datetime de la potencia AC [W]
+    - ac_power: Serie o DataFrame con índice datetime y valores de potencia AC [W]
 
-    Return: Gráfico de potencia AC del día máximo y mínimo de un año
+    Return: Gráfico de Plotly con curvas comparativas del día con mayor y menor energía
     '''
-    ac_power_hour = ac_power.resample("h").mean() 
-    ac_power_hour_daily = ac_power_hour.resample("D").sum()
+    # Promedio horario y energía diaria
+    ac_power_hour = ac_power.resample("h").mean()
+    ac_power_day = ac_power_hour.resample("D").sum()
 
-    max_power_day = ac_power_hour_daily.idxmax()
-    min_power_day = ac_power_hour_daily.idxmin()
+    # Días clave
+    max_day = ac_power_day.idxmax()
+    min_day = ac_power_day.idxmin()
 
-    start_maxpow = max_power_day
-    end_maxpow = start_maxpow + timedelta(days=1)
-    start_minpow = min_power_day
-    end_minpow = start_minpow + timedelta(days=1)
+    # Rango horario unificado
+    hours = pd.date_range("00:00", "23:00", freq="H").time
+    x_labels = [t.strftime('%H:%M') for t in hours]
 
-    ac_power_maxday = ac_power.resample("h").mean().loc[start_maxpow:end_maxpow]
-    ac_power_minday = ac_power.resample("h").mean().loc[start_minpow:end_minpow]
+    # Función para alinear un día a las 24 horas
+    def get_day_power(day):
+        day_data = ac_power_hour.loc[day:day + timedelta(hours=23)]
+        grouped = day_data.groupby(day_data.index.time).mean()
+        aligned = pd.Series(grouped, index=hours)
+        return aligned
 
-    hours_max = [t.strftime('%H:%M') for t in ac_power_maxday.index.time]
-    hours_min = [t.strftime('%H:%M') for t in ac_power_minday.index.time]
-    hover_max = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W" for dt, val in zip(ac_power_maxday.index, ac_power_maxday)]
-    hover_min = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W" for dt, val in zip(ac_power_minday.index, ac_power_minday)]
+    power_max = get_day_power(max_day)
+    power_min = get_day_power(min_day)
 
+    # Hover info
+    hover_max = [f"{max_day.date()} {t} - {v:.2f} W" for t, v in zip(x_labels, power_max)]
+    hover_min = [f"{min_day.date()} {t} - {v:.2f} W" for t, v in zip(x_labels, power_min)]
+
+    # Gráfico
     fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x_labels, y=power_max, name=f"Día con máxima energía ({max_day.date()})",
+                             line=dict(color="red"), mode="lines", hovertext=hover_max, hoverinfo="text"))
+    fig.add_trace(go.Scatter(x=x_labels, y=power_min, name=f"Día con mínima energía ({min_day.date()})",
+                             line=dict(color="blue"), mode="lines", hovertext=hover_min, hoverinfo="text"))
 
-    fig.add_trace(go.Scatter(x=hours_max, y=ac_power_maxday.values, mode='lines', name=f'Día con máxima energía ({max_power_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
-    fig.add_trace(go.Scatter(x=hours_min, y=ac_power_minday.values, mode='lines', name=f'Día con mínima energía ({min_power_day.date()})',line=dict(color='blue'), hovertext=hover_min, hoverinfo="text"))
-    
     fig.update_layout(
         title='Comparación de potencia AC del día de máxima y mínima energía del año',
         xaxis_title='Hora del día',
         yaxis_title='Potencia AC [W]',
-        xaxis=dict(showgrid=True),
-        yaxis=dict(showgrid=True),
-        template='plotly_white'
+        template='plotly_white',
+        legend=dict(x=1.02, y=1, xanchor='left'),
+        margin=dict(r=100)
     )
 
     return fig
