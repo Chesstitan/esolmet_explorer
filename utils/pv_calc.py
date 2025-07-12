@@ -215,12 +215,12 @@ def pvgen_poaglobal_year(ac_power, irradiance):
 # 8. Visualización de ghi, dni, dhi contra ghi2, dni2, dhi2 del modelo POA
 def poa_visual_extrdays(irradiance):
     '''
-    Grafica las irradiancias sobre un plano inclinado (POA) del día máximo y mínimo anual de energía por Poa_gobal
+    Grafica las irradiancias sobre un plano inclinado (POA) del día máximo y mínimo de energía anual por irradiancia
 
     Parámetros:
-    - irradiance : irradiancia sobre un plano inclinado (global, directa y difusa) [W/m^2]
+    - irradiance : irradiancia global sobre un plano inclinado [W/m^2]
 
-    Return: Gráfico irradiancias sobre un plano inclinado (POA) del día máximo y mínimo del año
+    Return: Gráfico irradiancias sobre un plano inclinado (POA) del día máximo y mínimo de energía del año
     '''
     # Obteniendo irradiance por día
     poa_global_hour = irradiance.poa_global.resample("h").mean()
@@ -265,12 +265,12 @@ def poa_visual_extrdays(irradiance):
 # 9. Visualizacion de potencia en un día
 def power_visual_extrdays(ac_power):
     '''
-    Grafica la potencia AC del día máximo y mínimo de energía por potencia de un año
+    Grafica la potencia AC del día máximo y mínimo de energía anual por potencia
 
     Parámetros:
     - ac_power: DataFrame con índice datetime de la potencia AC [W]
 
-    Return: Gráfico de potencia AC del día máximo y mínimo anual
+    Return: Gráfico de potencia AC del día máximo y mínimo de un año
     '''
     ac_power_hour = ac_power.resample("h").mean() 
     ac_power_hour_daily = ac_power_hour.resample("D").sum()
