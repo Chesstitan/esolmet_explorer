@@ -25,7 +25,7 @@ modules_pv = {
 
 assembly_options = {
     "Módulo monocristalino/policristalino en rack abierto": "open_rack_glass_polymer",
-    "Módulo estándar montado sobre techo": "roof_mount_glass_polymer"
+    "Módulo en estructura con aislamiento": "insulated_back_glass_polymer"
 }
 
 inverters = {
@@ -44,7 +44,7 @@ pv_calc_ui = ui.page_fluid(
             ui.input_select("inverter_model","Seleccione un modelo de inversor", choices = list(inverters.keys()), selected = "Huawei SUN2000 480V (98.8%)"),
             ui.input_numeric("tilt","Ángulo de inclinación del módulo (°)", value = latitude),
             ui.input_numeric("azimuth","Ángulo de azimuth del módulo (°)", value = 180),
-            ui.input_action_button("calculate","Calcular"),  
+            ui.input_task_button("run_sim", "Calcular", class_="mb-4"),  
             ui.popover(
             ui.input_action_button("btn_info_azimuth", "ℹ️ Ayuda", size="sm"),
             ui.HTML('''

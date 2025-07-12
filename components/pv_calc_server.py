@@ -1,6 +1,5 @@
 from shiny import App, ui, render, reactive
 from shinywidgets import output_widget, render_widget
-from shiny import reactive
 from utils.config import load_settings
 from utils.pv_calc import irradiance_poa, hsp_calc, hsp_visual, power_calc, pvgen_poaglobal_year, poa_visual_extrdays, power_visual_extrdays
 from components.pv_calc_ui import modules_pv, assembly_options, inverters
@@ -12,56 +11,59 @@ lat, lon = latitude, longitude
 con = duckdb.connect('esolmet.db')
 df_large = con.execute("SELECT * FROM lecturas").fetchdf()
 
-
 df = df_large.pivot(index='fecha', columns='variable', values='valor')
 df.index = pd.to_datetime(df.index)
 df = df.sort_index()
 df = df.loc["2024"]
 df.index = df.index.tz_localize('America/Mexico_City') # type: ignore # Asignación de zona horaria
 
-
 def pv_calc_server(input, output, session):
-    
-    has_clicked = reactive.Value(False)
+    @reactive.calc
+    def current_inputs():
+        return {
+            "surface_tilt": input.tilt(),
+            "surface_azimuth": input.azimuth(),
+            "selected_mod": input.model_pv(),
+            "selected_asse": input.assembly(),
+            "selected_inv": input.inverter_model()
+        }
 
-    @reactive.effect
-    @reactive.event(input.calculate)
-    def on_click():
-        has_clicked.set(True)
+    def run_calcs(inputs):
+        surface_tilt = inputs["surface_tilt"]
+        surface_azimuth = inputs["surface_azimuth"]
+        pdc0 = modules_pv[inputs["selected_mod"]]["pdc0"]
+        gamma_pdc = modules_pv[inputs["selected_mod"]]["gamma_pdc"]
+        assembly = assembly_options[inputs["selected_asse"]]
+        inv_eff = inverters[inputs["selected_inv"]]
+
+        irradiance = irradiance_poa(df, lat, lon, surface_tilt, surface_azimuth)
+        ac_power, df_poa_power = power_calc(df, irradiance, assembly, pdc0, gamma_pdc, inv_eff)
+
+        return {
+            "irradiance": irradiance,
+            "ac_power": ac_power,
+            "df_poa_power": df_poa_power,
+            "surface_tilt": surface_tilt,
+            "surface_azimuth": surface_azimuth
+        }
+
+    def default_inputs():
+        return {
+            "surface_tilt": lat,
+            "surface_azimuth": 180,
+            "selected_mod": "Longi 620W Mono",
+            "selected_asse": "Módulo monocristalino/policristalino en rack abierto",
+            "selected_inv": "Huawei SUN2000 480V (98.8%)"
+        }
 
     @reactive.calc
-
     def calcs():
-        if not has_clicked.get():
-            # Usa valores por defecto antes de que se haga clic
-            surface_tilt = latitude
-            surface_azimuth = 180
-            selected_mod = "Longi 620W Mono"
-            pdc0 = modules_pv[selected_mod]["pdc0"]
-            gamma_pdc = modules_pv[selected_mod]["gamma_pdc"]
-            selected_asse = "Módulo monocristalino/policristalino en rack abierto"
-            assembly = assembly_options[selected_asse]
-            selected_inv = "Huawei SUN2000 480V (98.8%)"
-            inv_eff = inverters[selected_inv]
-        else:
-            # Inputs
-            surface_tilt=input.tilt()
-            surface_azimuth=input.azimuth()
-            selected_mod = input.model_pv()
-            pdc0 = modules_pv[selected_mod]["pdc0"]
-            gamma_pdc = modules_pv[selected_mod]["gamma_pdc"]
-            selected_asse = input.assembly()
-            assembly = assembly_options[selected_asse]
-            selected_inv = input.inverter_model()
-            inv_eff = inverters[selected_inv]
-
-        # Funciones de cálculo
-        irradiance = irradiance_poa(df,lat,lon,surface_tilt,surface_azimuth)
-        ac_power, df_poa_power = power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff)
-
-        return {"irradiance": irradiance,"ac_power": ac_power,"df_poa_power": df_poa_power,
-                "surface_tilt":surface_tilt,"surface_azimuth":surface_azimuth}
-
+        n_clicks = input.run_sim()
+        if n_clicks == 0:
+            return run_calcs(default_inputs())
+        with reactive.isolate():
+            return run_calcs(current_inputs())
+    
     @output
     @render_widget # type: ignore
     def graph_energy_month():
