@@ -44,11 +44,36 @@ pv_calc_ui = ui.page_fluid(
             ui.input_select("inverter_model","Seleccione un modelo de inversor", choices = list(inverters.keys()), selected = "Huawei SUN2000 480V (98.8%)"),
             ui.input_numeric("tilt","Ángulo de inclinación del módulo (°)", value = latitude),
             ui.input_numeric("azimuth","Ángulo de azimuth del módulo (°)", value = 180),
-            ui.input_action_button("calculate","Calcular")                    
-
+            ui.input_action_button("calculate","Calcular"),  
+            ui.popover(
+            ui.input_action_button("btn_info_azimuth", "ℹ️ Ayuda", size="sm"),
+            ui.HTML('''
+                    <ul>
+                        <li>El ángulo de <strong>azimuth</strong> representa la orientación del módulo respecto al norte geográfico.</li>
+                        <li>Un azimuth de <strong>180°</strong> indica orientación al sur; <strong>90°</strong> es el este.</li>
+                        <li><strong>POA</strong> significa <em>plane-of-array</em>: el plano del módulo FV.</li>
+                        <li><strong>Irradiancia POA</strong> es la irradiancia sobre un plano o módulo FV.</li>
+                        <li><strong>HSP</strong> significa <em>hora solar pico</em>.</li>
+                    </ul>
+                '''),
+            # '''El ángulo de azimuth representa la orientación del módulo respecto al norte geográfico. Un azimuth de 180° indica orientación al sur, 90° es el este. 
+            # POA significa plane-of-array y simboliza el plano del módulo FV, irradiancia POA es la irradiancia sobre el módulo.
+            # POA global es la irradiancia global sobre el plano/módulo FV 
+            # HSP significa hora solar pico''',
+            title="Información relevante",
+            id="popover_info",
+            placement="right"
+            )                           
         ),
         ui.div(
-            output_widget("graph_energy_month")
+        output_widget("graph_energy_month"),
+        # ui.popover(
+        #     ui.input_action_button("btn_info_energy_month", "ℹ️ Ayuda",size="sm"),
+        #     "Esta gráfica muestra la energía solar y potencia AC generadas por el sistema fotovoltaico durante cada mes del año. Puedes utilizarla para identificar la estacionalidad de la producción energética.",
+        #     title="¿Cómo leer esta gráfica?",
+        #     id="popover_energy_month",
+        #     placement="bottom"
+        #     )
         ),
         ui.div(
             output_widget("graph_irradiances"),
@@ -56,6 +81,7 @@ pv_calc_ui = ui.page_fluid(
             # ui.download_button("download_data_poa", "Descargar datos POA + Potencia")
         ),
         ui.div(
+            ui.h4("Tabla de HSP promedio mensual y anual por inclinación"),
             ui.output_table("table_hsp")
             # ui.download_button("download_table_hsp", "Descargar tabla HSP")
         ),

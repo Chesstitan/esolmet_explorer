@@ -121,7 +121,7 @@ def hsp_visual(df_hsp,irradiance):
     fig.add_shape(type="rect",x0=start_hour, x1=end_hour,y0=0, y1=1000,fillcolor="rgba(255,0,0,0.1)",line=dict(width=0),layer='below') # type: ignore # Sombreado
 
     fig.update_layout(
-        title=f'Visualización de HSP promedio anual de la curva de irradiancia del día promedio anual',
+        title=f'Visualización de HSP promedio anual a la inclinación seleccionada del día promedio anual',
         xaxis_title='Hora del día',
         yaxis_title='Irradiancia (W/m^2)',
         legend=dict(x=1.02, y=1, xanchor='left'),
