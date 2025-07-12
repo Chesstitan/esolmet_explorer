@@ -1,7 +1,8 @@
 from shiny import App, ui, render, reactive
 from shinywidgets import output_widget, render_widget
+from shiny import reactive
 from utils.config import load_settings
-from utils.pv_calc import irradiance_poa, hsp_calc, hsp_visual, power_calc, pvgen_poaglobal_year, poa_visual, power_setdate
+from utils.pv_calc import irradiance_poa, hsp_calc, hsp_visual, power_calc, pvgen_poaglobal_year, poa_visual_extrdays, power_visual_extrdays
 from components.pv_calc_ui import modules_pv, assembly_options, inverters
 import pandas as pd
 import duckdb
@@ -21,19 +22,38 @@ df.index = df.index.tz_localize('America/Mexico_City') # type: ignore # Asignaci
 
 def pv_calc_server(input, output, session):
     
-    @reactive.calc
+    has_clicked = reactive.Value(False)
+
+    @reactive.effect
     @reactive.event(input.calculate)
+    def on_click():
+        has_clicked.set(True)
+
+    @reactive.calc
+
     def calcs():
-        # Inputs
-        surface_tilt=input.tilt()
-        surface_azimuth=input.azimuth()
-        selected_mod = input.model_pv()
-        pdc0 = modules_pv[selected_mod]["pdc0"]
-        gamma_pdc = modules_pv[selected_mod]["gamma_pdc"]
-        selected_asse = input.assembly()
-        assembly = assembly_options[selected_asse]
-        selected_inv = input.inverter_model()
-        inv_eff = inverters[selected_inv]
+        if not has_clicked.get():
+            # Usa valores por defecto antes de que se haga clic
+            surface_tilt = latitude
+            surface_azimuth = 180
+            selected_mod = "Longi 450W Mono"
+            pdc0 = modules_pv[selected_mod]["pdc0"]
+            gamma_pdc = modules_pv[selected_mod]["gamma_pdc"]
+            selected_asse = "Módulo monocristalino/policristalino en rack abierto"
+            assembly = assembly_options[selected_asse]
+            selected_inv = "Inversor A (96%)"
+            inv_eff = inverters[selected_inv]
+        else:
+            # Inputs
+            surface_tilt=input.tilt()
+            surface_azimuth=input.azimuth()
+            selected_mod = input.model_pv()
+            pdc0 = modules_pv[selected_mod]["pdc0"]
+            gamma_pdc = modules_pv[selected_mod]["gamma_pdc"]
+            selected_asse = input.assembly()
+            assembly = assembly_options[selected_asse]
+            selected_inv = input.inverter_model()
+            inv_eff = inverters[selected_inv]
 
         # Funciones de cálculo
         irradiance = irradiance_poa(df,lat,lon,surface_tilt,surface_azimuth)
@@ -52,32 +72,29 @@ def pv_calc_server(input, output, session):
     @output
     @render_widget # type: ignore
     def graph_irradiances():
-        set_date = pd.to_datetime(input.set_date()).tz_localize("America/Mexico_City")
         irradiance = calcs()["irradiance"]       
-        return poa_visual(df,irradiance,set_date)
+        return poa_visual_extrdays(irradiance)
     
     @output
     @render_widget # type: ignore
     def graph_ac_power():
-        set_date = pd.to_datetime(input.set_date()).tz_localize("America/Mexico_City")
         ac_power = calcs()["ac_power"]       
-        return power_setdate(ac_power,set_date)
+        return power_visual_extrdays(ac_power)
 
     @output
     @render_widget # type: ignore
     def graph_hsp():
-        surface_tilt=input.tilt()
-        surface_azimuth=input.azimuth()
+        surface_tilt= calcs()["surface_tilt"]
+        surface_azimuth= calcs()["surface_azimuth"]
         df_hsp = hsp_calc(df,lat,lon,surface_tilt, surface_azimuth)
         irradiance = calcs()["irradiance"]   
-        set_date = pd.to_datetime(input.set_date()).tz_localize("America/Mexico_City")    
-        return hsp_visual(df_hsp,irradiance,set_date)
+        return hsp_visual(df_hsp,irradiance)
     
     @output
     @render.table
     def table_hsp():
-        surface_tilt=calcs()["surface_tilt"]
-        surface_azimuth=calcs()["surface_azimuth"]
+        surface_tilt= calcs()["surface_tilt"]
+        surface_azimuth= calcs()["surface_azimuth"]
         return hsp_calc(df,lat,lon,surface_tilt, surface_azimuth)
     
     # # Botón de descarga para datos POA

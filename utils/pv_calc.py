@@ -88,7 +88,7 @@ def hsp_calc(df,lat,lon,surface_tilt, surface_azimuth):
     return df_hsp
 
 # Visualización la definición de HSP 
-def hsp_visual(df_hsp,irradiance,set_date):
+def hsp_visual(df_hsp,irradiance):
     '''
     Grafica la HSP promedio anual en una curva de irradiancia global (G) sobre un plano inclinado
     de una fecha específica
@@ -96,29 +96,32 @@ def hsp_visual(df_hsp,irradiance,set_date):
     Parámetros:
     - df_hsp: DataFrame de las HSP promedio mensuales y anual de diferentes inclinaciones 
     - irradiance : irradiancia global sobre un plano inclinado [W/m^2]
-    - set_date: fecha específica a consultar
 
     Return: Gráfico de la definición de HSP sobre una curva G de un día específico
     '''
+    poa_global_hour = irradiance.poa_global.resample("h").mean() 
+    avg_irradiance_by_hour = poa_global_hour.groupby(poa_global_hour.index.hour).mean().round(2)
+    hours_label = [f"{h:02d}:00" for h in range(24)]
+    
     hsp_year= df_hsp.Average.iloc[1]
-    start_date = set_date
-    end_date = set_date + timedelta(days=1)
-    ghi_poa = irradiance.poa_global.resample("h").mean().loc[str(start_date):str(end_date)] # type: ignore
-    center_time = ghi_poa.idxmax() #Tomé el max de irradiancia como valor central 
-    start_time = center_time - pd.Timedelta(hours=hsp_year / 2)
-    end_time = center_time + pd.Timedelta(hours=hsp_year / 2)
+    center_hour = avg_irradiance_by_hour.idxmax() #Tomé el max de irradiancia como valor central 
+    start_hour = center_hour - hsp_year / 2
+    end_hour = center_hour + hsp_year / 2
+    
+    # start_time = center_time - pd.Timedelta(hours=hsp_year / 2)
+    # end_time = center_time + pd.Timedelta(hours=hsp_year / 2)
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=ghi_poa.index, y=ghi_poa, mode='lines', name='POA Global', line=dict(color='black')))
+    fig.add_trace(go.Scatter(x=hours_label, y=avg_irradiance_by_hour.values, mode='lines', name='Día irradiancia promedio anual', line=dict(color='black')))
 
-    fig.add_shape(type="line", x0=start_time, x1=start_time, y0=0, y1=1000,line=dict(color="red", dash="dash"), name="Inicio HSP") # type: ignore #Vertical
-    fig.add_shape(type="line", x0=end_time, x1=end_time, y0=0, y1=1000,line=dict(color="red", dash="dash"), name="Fin HSP") # type: ignore #Vertical
-    fig.add_shape(type="line", x0=start_time, x1=end_time, y0=1000, y1=1000,line=dict(color="red", dash="dot"), name="1000 W/m²") # type: ignore # Horizontal
-    fig.add_shape(type="rect",x0=start_time, x1=end_time,y0=0, y1=1000,fillcolor="rgba(255,0,0,0.1)",line=dict(width=0),layer='below') # type: ignore # Sombreado
+    fig.add_shape(type="line", x0=start_hour, x1=start_hour, y0=0, y1=1000,line=dict(color="red", dash="dash"), name="Inicio HSP") # type: ignore #Vertical
+    fig.add_shape(type="line", x0=end_hour, x1=end_hour, y0=0, y1=1000,line=dict(color="red", dash="dash"), name="Fin HSP") # type: ignore #Vertical
+    fig.add_shape(type="line", x0=start_hour, x1=end_hour, y0=1000, y1=1000,line=dict(color="red", dash="dot"), name="1000 W/m²") # type: ignore # Horizontal
+    fig.add_shape(type="rect",x0=start_hour, x1=end_hour,y0=0, y1=1000,fillcolor="rgba(255,0,0,0.1)",line=dict(width=0),layer='below') # type: ignore # Sombreado
 
     fig.update_layout(
-        title=f'Visualización de HSP promedio anual de la curva de irradiancia de la fecha ({set_date})',
+        title=f'Visualización de HSP promedio anual de la curva de irradiancia',
         xaxis_title='Hora del día',
         yaxis_title='Irradiancia (W/m^2)',
         legend=dict(x=1.02, y=1, xanchor='left'),
@@ -130,7 +133,7 @@ def hsp_visual(df_hsp,irradiance,set_date):
 # Cálculos para potencia AC
 def power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff):
     '''
-    Calcula la potencia AC generada por un módulo FV específico
+    Calcula la potencia AC generada por un módulo FV específico [W]
 
     Parámetros:
     - df: DataFrame con índice datetime que incluye variables como ghi, dni, dhi, tdb, ws
@@ -144,7 +147,7 @@ def power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff):
     -Se utiliza el modelo SAPM únicamente para calcular la temperatura de la celda
     -Se utiliza el modelo PVWatts para calcular la potencia DC
 
-    Return: La potencia AC en un DataFrame y un Dataframe de irradiancia POA junto con la potencia AC
+    Return: La potencia AC [W] en un DataFrame y un Dataframe de irradiancia POA junto con la potencia AC
     '''
     # Calcular temperatura del módulo
     temp_params = TEMPERATURE_MODEL_PARAMETERS['sapm'][assembly]
@@ -198,8 +201,8 @@ def pvgen_poaglobal_year(ac_power, irradiance):
         bargap=0.15,
         bargroupgap=0.1,
         legend=dict(
-            x=1.1,  # Dentro del área de trazado
-            y=1,
+        #     x=1.1,  # Dentro del área de trazado
+        #     y=1,
             xanchor='right',
             yanchor='top',
             bgcolor='rgba(0,0,0,0)',  # Fondo transparente
@@ -210,40 +213,46 @@ def pvgen_poaglobal_year(ac_power, irradiance):
     return fig
 
 # 8. Visualización de ghi, dni, dhi contra ghi2, dni2, dhi2 del modelo POA
-def poa_visual(df,irradiance,set_date):
+def poa_visual_extrdays(irradiance):
     '''
-    Grafica las irradiancias de la estación meteorológica y las irradiancias sobre un plano inclinado (POA)
+    Grafica las irradiancias sobre un plano inclinado (POA) del día máximo y mínimo anual de energía por Poa_gobal
 
     Parámetros:
-    - df: DataFrame con índice datetime que incluye variables como ghi, dni, dhi, tdb, ws
     - irradiance : irradiancia sobre un plano inclinado (global, directa y difusa) [W/m^2]
-    - set_date: fecha específica a consultar
 
-    Return: Gráfico irradiancias de mediciones meteorológicas e irradiancias sobre un plano inclinado (POA)
+    Return: Gráfico irradiancias sobre un plano inclinado (POA) del día máximo y mínimo del año
     '''
-    start_date = set_date
-    end_date = set_date + timedelta(days=1)
-    # Mediciones
-    ghi = df.ghi.resample("h").mean().loc[str(start_date):str(end_date)].round(2)
-    dni = df.dni.resample("h").mean().loc[str(start_date):str(end_date)]
-    dhi = df.dhi.resample("h").mean().loc[str(start_date):str(end_date)]
+    # Obteniendo irradiance por día
+    poa_global_hour = irradiance.poa_global.resample("h").mean()
+    energy_poa_daily = poa_global_hour.resample("D").sum()
+    
+    # Día con mayor y menor energía
+    max_irr_day = energy_poa_daily.idxmax()
+    min_irr_day = energy_poa_daily.idxmin()
+       
+    # Fechas para graficar 
+    start_maxir = max_irr_day
+    end_maxir = start_maxir + timedelta(days=1)
+    start_minir = min_irr_day
+    end_minir = start_minir + timedelta(days=1)
+    
     # Del irradiance model POA sobre plano inclinado
-    ghi2 = irradiance.poa_global.resample("h").mean().loc[str(start_date):str(end_date)]
-    dni2 = irradiance.poa_direct.resample("h").mean().loc[str(start_date):str(end_date)] 
-    dhi2 = irradiance.poa_diffuse.resample("h").mean().loc[str(start_date):str(end_date)] 
+    poa_max = irradiance.poa_global.resample("h").mean().loc[start_maxir:end_maxir]
+    poa_min = irradiance.poa_global.resample("h").mean().loc[start_minir:end_minir]
+
+    hours_max = [t.strftime('%H:%M') for t in poa_max.index.time]
+    hours_min = [t.strftime('%H:%M') for t in poa_min.index.time]
+    hover_max = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W/m²" for dt, val in zip(poa_max.index, poa_max)]
+    hover_min = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W/m²" for dt, val in zip(poa_min.index, poa_min)]
+
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=ghi.index, y=ghi, mode='lines', name='GHI (medido)', line=dict(color='red')))
-    fig.add_trace(go.Scatter(x=dni.index, y=dni, mode='lines', name='DNI (medido)', line=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=dhi.index, y=dhi, mode='lines', name='DHI (medido)', line=dict(color='gold')))
-
-    fig.add_trace(go.Scatter(x=ghi2.index, y=ghi2, mode='lines', name='POA Global', line=dict(color='purple')))
-    fig.add_trace(go.Scatter(x=dni2.index, y=dni2, mode='lines', name='POA Directa', line=dict(color='cyan')))
-    fig.add_trace(go.Scatter(x=dhi2.index, y=dhi2, mode='lines', name='POA Difusa', line=dict(color='green')))
-
+    fig.add_trace(go.Scatter(x=hours_max, y=poa_max.values, mode='lines', name=f'Energía máx ({max_irr_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
+    fig.add_trace(go.Scatter(x=hours_min, y=poa_min.values, mode='lines', name=f'Energía mín ({min_irr_day.date()})', line=dict(color='blue'),hovertext=hover_min,hoverinfo="text"))
+    
     fig.update_layout(
-        title=f'Comparación de Irradiancias: Medidas vs POA ({set_date})',
+        title=f'Comparación de irradiancias POA máxima y mínima anual',
         xaxis_title='Hora del día',
         yaxis_title='Irradiancia (W/m2)',
         legend=dict(x=1.02, y=1, xanchor='left'),
@@ -254,31 +263,39 @@ def poa_visual(df,irradiance,set_date):
     return fig
 
 # 9. Visualizacion de potencia en un día
-def power_setdate(ac_power,set_date):
+def power_visual_extrdays(ac_power):
     '''
-    Grafica la potencia AC de un día específico
+    Grafica la potencia AC del día máximo y mínimo de energía por potencia de un año
 
     Parámetros:
     - ac_power: DataFrame con índice datetime de la potencia AC [W]
-    - set_date: fecha específica a consultar
 
-    Return: Gráfico de potencia AC de un día específico
+    Return: Gráfico de potencia AC del día máximo y mínimo anual
     '''
-    start_date = set_date
-    end_date = set_date + timedelta(days=1)
-    ac_power_day = ac_power.resample("h").mean()
-    ac_power_day = ac_power_day.loc[str(start_date):str(end_date)]
+    ac_power_hour = ac_power.resample("h").mean() 
+    ac_power_hour_daily = ac_power_hour.resample("D").sum()
+
+    max_power_day = ac_power_hour_daily.idxmax()
+    min_power_day = ac_power_hour_daily.idxmin()
+
+    start_maxpow = max_power_day
+    end_maxpow = start_maxpow + timedelta(days=1)
+    start_minpow = min_power_day
+    end_minpow = start_minpow + timedelta(days=1)
+
+    ac_power_maxday = ac_power.resample("h").mean().loc[start_maxpow:end_maxpow]
+    ac_power_minday = ac_power.resample("h").mean().loc[start_minpow:end_minpow]
+
+    hours_max = [t.strftime('%H:%M') for t in ac_power_maxday.index.time]
+    hours_min = [t.strftime('%H:%M') for t in ac_power_minday.index.time]
+    hover_max = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W" for dt, val in zip(ac_power_maxday.index, ac_power_maxday)]
+    hover_min = [f"{dt.strftime('%Y-%m-%d %H:%M')} - {val:.2f} W" for dt, val in zip(ac_power_minday.index, ac_power_minday)]
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x=ac_power_day.index,
-        y=ac_power_day.values,
-        mode='lines',
-        name='Potencia AC',
-        line=dict(color='blue')
-    ))
-
+    fig.add_trace(go.Scatter(x=hours_max, y=ac_power_maxday.values, mode='lines', name=f'Energía máx ({max_power_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
+    fig.add_trace(go.Scatter(x=hours_min, y=ac_power_minday.values, mode='lines', name=f'Energía máx ({min_power_day.date()})',line=dict(color='blue'), hovertext=hover_min, hoverinfo="text"))
+    
     fig.update_layout(
         title='Potencia AC diaria',
         xaxis_title='Hora del día',

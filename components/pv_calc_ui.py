@@ -46,7 +46,6 @@ pv_calc_ui = ui.page_fluid(
             ui.input_select("inverter_model","Seleccione un modelo de inversor", choices = list(inverters.keys()), selected = "Inversor A (96%)"),
             ui.input_numeric("tilt","Ángulo de inclinación del módulo (°)", value = latitude),
             ui.input_numeric("azimuth","Ángulo de azimuth del módulo (°)", value = 180),
-            ui.input_date("set_date","Selecciona una fecha específica", value="2024-03-01"),
             ui.input_action_button("calculate","Calcular")                    
 
         ),
