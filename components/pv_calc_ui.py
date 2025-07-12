@@ -56,10 +56,6 @@ pv_calc_ui = ui.page_fluid(
                         <li><strong>HSP</strong> significa <em>hora solar pico</em>.</li>
                     </ul>
                 '''),
-            # '''El ángulo de azimuth representa la orientación del módulo respecto al norte geográfico. Un azimuth de 180° indica orientación al sur, 90° es el este. 
-            # POA significa plane-of-array y simboliza el plano del módulo FV, irradiancia POA es la irradiancia sobre el módulo.
-            # POA global es la irradiancia global sobre el plano/módulo FV 
-            # HSP significa hora solar pico''',
             title="Información relevante",
             id="popover_info",
             placement="right"
@@ -67,23 +63,16 @@ pv_calc_ui = ui.page_fluid(
         ),
         ui.div(
         output_widget("graph_energy_month"),
-        # ui.popover(
-        #     ui.input_action_button("btn_info_energy_month", "ℹ️ Ayuda",size="sm"),
-        #     "Esta gráfica muestra la energía solar y potencia AC generadas por el sistema fotovoltaico durante cada mes del año. Puedes utilizarla para identificar la estacionalidad de la producción energética.",
-        #     title="¿Cómo leer esta gráfica?",
-        #     id="popover_energy_month",
-        #     placement="bottom"
-        #     )
         ),
         ui.div(
             output_widget("graph_irradiances"),
-            output_widget("graph_ac_power")
-            # ui.download_button("download_data_poa", "Descargar datos POA + Potencia")
+            output_widget("graph_ac_power"),
+            ui.download_button("download_data_poa", "Descargar datos irradiancia POA + Potencia AC")
         ),
         ui.div(
             ui.h4("Tabla de HSP promedio mensual y anual por inclinación"),
-            ui.output_table("table_hsp")
-            # ui.download_button("download_table_hsp", "Descargar tabla HSP")
+            ui.output_table("table_hsp"),
+            ui.download_button("download_table_hsp", "Descargar tabla HSP")
         ),
         ui.div(
             output_widget("graph_hsp")

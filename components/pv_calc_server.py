@@ -97,21 +97,20 @@ def pv_calc_server(input, output, session):
         surface_azimuth= calcs()["surface_azimuth"]
         return hsp_calc(df,lat,lon,surface_tilt, surface_azimuth)
     
-    # # Botón de descarga para datos POA
-    # @output
-    # @render.download
-    # def download_data_poa():
-    #     def writer():
-    #         df_poa_power = calcs()["df_poa_power"] 
-    #         yield df_poa_power.to_csv()
-    #     return writer
+    # Botón de descarga para datos POA
+    @output
+    @render.download(filename="datos_poa_potencia.csv", media_type="text/csv")
+    def download_data_poa():
+        df_poa_power = calcs()["df_poa_power"] 
+        yield df_poa_power.to_csv(index=True)
+        
 
-    # # Botón de descarga para tabla HSP
-    # @output
-    # @render.download
-    # def download_table_hsp():
-    #     def writer():
-    #         table = table_hsp()
-    #         yield table.to_csv()
-    #     return writer
+    # Botón de descarga para tabla HSP
+    @output
+    @render.download(filename="tabla_hsp.csv",media_type="text/csv")
+    def download_table_hsp():
+        surface_tilt= calcs()["surface_tilt"]
+        surface_azimuth= calcs()["surface_azimuth"]
+        table = hsp_calc(df,lat,lon,surface_tilt, surface_azimuth)
+        yield table.to_csv(index=True)
     
