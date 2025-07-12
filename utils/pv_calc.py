@@ -121,7 +121,7 @@ def hsp_visual(df_hsp,irradiance):
     fig.add_shape(type="rect",x0=start_hour, x1=end_hour,y0=0, y1=1000,fillcolor="rgba(255,0,0,0.1)",line=dict(width=0),layer='below') # type: ignore # Sombreado
 
     fig.update_layout(
-        title=f'Visualización de HSP promedio anual de la curva de irradiancia',
+        title=f'Visualización de HSP promedio anual de la curva de irradiancia del día promedio anual',
         xaxis_title='Hora del día',
         yaxis_title='Irradiancia (W/m^2)',
         legend=dict(x=1.02, y=1, xanchor='left'),
@@ -248,11 +248,11 @@ def poa_visual_extrdays(irradiance):
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=hours_max, y=poa_max.values, mode='lines', name=f'Energía máx ({max_irr_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
-    fig.add_trace(go.Scatter(x=hours_min, y=poa_min.values, mode='lines', name=f'Energía mín ({min_irr_day.date()})', line=dict(color='blue'),hovertext=hover_min,hoverinfo="text"))
+    fig.add_trace(go.Scatter(x=hours_max, y=poa_max.values, mode='lines', name=f'Día con máxima energía ({max_irr_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
+    fig.add_trace(go.Scatter(x=hours_min, y=poa_min.values, mode='lines', name=f'Día con mínima energía ({min_irr_day.date()})', line=dict(color='blue'),hovertext=hover_min,hoverinfo="text"))
     
     fig.update_layout(
-        title=f'Comparación de irradiancias POA máxima y mínima anual',
+        title=f'Comparación de irradiancias (POA global) del día de máxima y mínima energía del año',
         xaxis_title='Hora del día',
         yaxis_title='Irradiancia (W/m2)',
         legend=dict(x=1.02, y=1, xanchor='left'),
@@ -293,11 +293,11 @@ def power_visual_extrdays(ac_power):
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(x=hours_max, y=ac_power_maxday.values, mode='lines', name=f'Energía máx ({max_power_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
-    fig.add_trace(go.Scatter(x=hours_min, y=ac_power_minday.values, mode='lines', name=f'Energía máx ({min_power_day.date()})',line=dict(color='blue'), hovertext=hover_min, hoverinfo="text"))
+    fig.add_trace(go.Scatter(x=hours_max, y=ac_power_maxday.values, mode='lines', name=f'Día con máxima energía ({max_power_day.date()})',line=dict(color='red'), hovertext=hover_max, hoverinfo="text"))
+    fig.add_trace(go.Scatter(x=hours_min, y=ac_power_minday.values, mode='lines', name=f'Día con mínima energía ({min_power_day.date()})',line=dict(color='blue'), hovertext=hover_min, hoverinfo="text"))
     
     fig.update_layout(
-        title='Potencia AC diaria',
+        title='Comparación de potencia AC del día de máxima y mínima energía del año',
         xaxis_title='Hora del día',
         yaxis_title='Potencia AC [W]',
         xaxis=dict(showgrid=True),

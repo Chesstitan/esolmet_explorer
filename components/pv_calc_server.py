@@ -36,12 +36,12 @@ def pv_calc_server(input, output, session):
             # Usa valores por defecto antes de que se haga clic
             surface_tilt = latitude
             surface_azimuth = 180
-            selected_mod = "Longi 450W Mono"
+            selected_mod = "Longi 620W Mono"
             pdc0 = modules_pv[selected_mod]["pdc0"]
             gamma_pdc = modules_pv[selected_mod]["gamma_pdc"]
             selected_asse = "Módulo monocristalino/policristalino en rack abierto"
             assembly = assembly_options[selected_asse]
-            selected_inv = "Inversor A (96%)"
+            selected_inv = "Huawei SUN2000 480V (98.8%)"
             inv_eff = inverters[selected_inv]
         else:
             # Inputs
