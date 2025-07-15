@@ -7,19 +7,23 @@ _, latitude, longitude, _ , _ = load_settings()
 modules_pv = {
     "Longi 620W Mono": {
         "pdc0": 620,
-        "gamma_pdc": -0.0028
+        "gamma_pdc": -0.0028,
+        "area_mod": 2.701
     },
     "Canadian Solar 665W Mono PERC": {
         "pdc0": 665,
-        "gamma_pdc": -0.0034
+        "gamma_pdc": -0.0034,
+        "area_mod": 3.106
     },
     "JA Solar 605W Mono": {
         "pdc0": 605,
-        "gamma_pdc": -0.0035
+        "gamma_pdc": -0.0035,
+        "area_mod": 2.795
     },
     "Trina Solar 605W Mono": {
         "pdc0": 605,
-        "gamma_pdc": -0.0034
+        "gamma_pdc": -0.0034,
+        "area_mod": 2.830
     }
 }
 
@@ -42,6 +46,7 @@ pv_calc_ui = ui.page_fluid(
             ui.input_select("model_pv","Selecciona un modelo de módulo FV", choices = list(modules_pv.keys()), selected = "Longi 620W Mono"),
             ui.input_select("assembly","Selecciona un modo de instalación", choices = list(assembly_options.keys()), selected = "Módulo monocristalino/policristalino en rack abierto" ),
             ui.input_select("inverter_model","Seleccione un modelo de inversor", choices = list(inverters.keys()), selected = "Huawei SUN2000 480V (98.8%)"),
+            ui.input_numeric("losses","Pérdidas % (ópticas, suciedad), ", value = 3),
             ui.input_numeric("tilt","Ángulo de inclinación del módulo (°)", value = latitude),
             ui.input_numeric("azimuth","Ángulo de azimuth del módulo (°)", value = 180),
             ui.input_task_button("run_sim", "Calcular", class_="mb-4"),  
@@ -49,10 +54,12 @@ pv_calc_ui = ui.page_fluid(
             ui.input_action_button("btn_info_azimuth", "ℹ️ Ayuda", size="sm"),
             ui.HTML('''
                     <ul>
+                        <li><strong>Pérdidas</strong> para un sólo módulo (1%-3%), no para un string.</li>    
                         <li>El ángulo de <strong>azimuth</strong> representa la orientación del módulo respecto al norte geográfico.</li>
                         <li>Un azimuth de <strong>180°</strong> indica orientación al sur; <strong>90°</strong> es el este.</li>
                         <li><strong>POA</strong> significa <em>plane-of-array</em>: el plano del módulo FV.</li>
-                        <li><strong>Irradiancia POA</strong> es la irradiancia sobre un plano o módulo FV.</li>
+                        <li><strong>Irradiancia POA</strong> es la irradiancia sobre un plano o módulo FV en [W/m^2].</li>
+                        <li><strong>Energía por irradiancia POA</strong> en el gráfico de barras contempla el área del módulo correspondiente, por ello, la unidad es kWh.</li>
                         <li><strong>HSP</strong> significa <em>hora solar pico</em>.</li>
                     </ul>
                 '''),

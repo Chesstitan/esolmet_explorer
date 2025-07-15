@@ -131,7 +131,7 @@ def hsp_visual(df_hsp,irradiance):
     return fig
 
 # Cálculos para potencia AC
-def power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff):
+def power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff,losses):
     '''
     Calcula la potencia AC generada por un módulo FV específico [W]
 
@@ -159,14 +159,14 @@ def power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff):
         **temp_params
     )# modelo SAPM para obtener temperatura de la celda únicamente
     dc_power = pvwatts_dc(poa_global, module_temp, pdc0=pdc0, gamma_pdc=gamma_pdc) # Potencia DC
-    ac_power = dc_power * inv_eff # Potencia AC brinda la potencia en W en intervalos de 10min de un único módulo 
+    ac_power = dc_power * inv_eff*(1-losses) # Potencia AC brinda la potencia en W en intervalos de 10min de un único módulo 
     df_poa_power = irradiance[["poa_global", "poa_direct", "poa_diffuse"]].copy()
     df_poa_power["ac_power"] = ac_power
 
     return ac_power, df_poa_power
 
 # PV gen vs Irradiancia global sobre plano
-def pvgen_poaglobal_year(ac_power, irradiance):
+def pvgen_poaglobal_year(ac_power, irradiance,area_mod):
     '''
     Grafica la generación FV de un módulo y la irradiancia global sobre un plano de un módulo
 
@@ -180,7 +180,7 @@ def pvgen_poaglobal_year(ac_power, irradiance):
     energy_ac_monthly = ac_power_hour.resample("ME").sum()
 
     poa_global_hour = irradiance.poa_global.resample("h").mean()/1000 # Energía de irradiancia sobre módulo en kWh
-    energy_poa_monthly = poa_global_hour.resample("ME").sum()
+    energy_poa_monthly = poa_global_hour.resample("ME").sum()*area_mod
 
     energy_monthly_array = pd.DataFrame({"Generación FV": (energy_ac_monthly).round(2),
         "Irradiancia_POA":  (energy_poa_monthly).round(2)})

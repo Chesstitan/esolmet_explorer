@@ -19,13 +19,24 @@ df.index = df.index.tz_localize('America/Mexico_City') # type: ignore # Asignaci
 
 def pv_calc_server(input, output, session):
     @reactive.calc
+    def default_inputs():
+        return {
+            "surface_tilt": lat,
+            "surface_azimuth": 180,
+            "selected_mod": "Longi 620W Mono",
+            "selected_asse": "Módulo monocristalino/policristalino en rack abierto",
+            "selected_inv": "Huawei SUN2000 480V (98.8%)",
+            "losses": 3
+        }
+    
     def current_inputs():
         return {
             "surface_tilt": input.tilt(),
             "surface_azimuth": input.azimuth(),
             "selected_mod": input.model_pv(),
             "selected_asse": input.assembly(),
-            "selected_inv": input.inverter_model()
+            "selected_inv": input.inverter_model(),
+            "losses": input.losses()
         }
 
     def run_calcs(inputs):
@@ -33,27 +44,21 @@ def pv_calc_server(input, output, session):
         surface_azimuth = inputs["surface_azimuth"]
         pdc0 = modules_pv[inputs["selected_mod"]]["pdc0"]
         gamma_pdc = modules_pv[inputs["selected_mod"]]["gamma_pdc"]
+        area_mod = modules_pv[inputs["selected_mod"]]["area_mod"]
         assembly = assembly_options[inputs["selected_asse"]]
         inv_eff = inverters[inputs["selected_inv"]]
+        losses = inputs["losses"]/100
 
         irradiance = irradiance_poa(df, lat, lon, surface_tilt, surface_azimuth)
-        ac_power, df_poa_power = power_calc(df, irradiance, assembly, pdc0, gamma_pdc, inv_eff)
+        ac_power, df_poa_power = power_calc(df, irradiance, assembly, pdc0, gamma_pdc, inv_eff,losses)
 
         return {
             "irradiance": irradiance,
             "ac_power": ac_power,
             "df_poa_power": df_poa_power,
             "surface_tilt": surface_tilt,
-            "surface_azimuth": surface_azimuth
-        }
-
-    def default_inputs():
-        return {
-            "surface_tilt": lat,
-            "surface_azimuth": 180,
-            "selected_mod": "Longi 620W Mono",
-            "selected_asse": "Módulo monocristalino/policristalino en rack abierto",
-            "selected_inv": "Huawei SUN2000 480V (98.8%)"
+            "surface_azimuth": surface_azimuth,
+            "area_mod": area_mod
         }
 
     @reactive.calc
@@ -68,8 +73,9 @@ def pv_calc_server(input, output, session):
     @render_widget # type: ignore
     def graph_energy_month():
         ac_power = calcs()["ac_power"]
-        irradiance = calcs()["irradiance"]        
-        return pvgen_poaglobal_year(ac_power, irradiance)
+        irradiance = calcs()["irradiance"]
+        area_mod = calcs()["area_mod"]        
+        return pvgen_poaglobal_year(ac_power, irradiance,area_mod)
     
     @output
     @render_widget # type: ignore
