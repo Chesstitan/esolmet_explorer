@@ -161,7 +161,8 @@ def power_calc(df,irradiance,assembly,pdc0,gamma_pdc,inv_eff,losses):
     dc_power = pvwatts_dc(poa_global, module_temp, pdc0=pdc0, gamma_pdc=gamma_pdc) # Potencia DC
     ac_power = dc_power * inv_eff*(1-losses) # Potencia AC brinda la potencia en W en intervalos de 10min de un único módulo 
     df_poa_power = irradiance[["poa_global", "poa_direct", "poa_diffuse"]].copy()
-    df_poa_power["ac_power"] = ac_power
+    df_poa_power.rename(columns={"poa_global":"POA_global (W/m^2)","poa_direct":"POA_direct (W/m^2)","poa_diffuse":"POA_diffuse (W/m^2)"},inplace=True)
+    df_poa_power["ac_power (W)"] = ac_power
 
     return ac_power, df_poa_power
 
